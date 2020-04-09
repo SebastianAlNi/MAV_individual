@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr  8 12:11:58 2020
+Created on Thu Apr  9 10:45:00 2020
 
 @author: ziemersky
 """
@@ -9,10 +9,7 @@ Created on Wed Apr  8 12:11:58 2020
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-
-filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/img_10.png'
-img = cv.imread(filename, 0)
-
+img = cv.imread('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/gate_template_orig_size.png',0)
 # Initiate ORB detector
 orb = cv.ORB_create()
 # find the keypoints with ORB

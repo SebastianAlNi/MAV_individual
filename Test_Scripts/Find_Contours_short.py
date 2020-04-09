@@ -14,7 +14,7 @@ filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/In
 img = cv.imread(filename)
 gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
 
-threshold = 300
+threshold = 200
 # Detect edges using Canny
 edges = cv.Canny(gray, threshold, threshold * 3)
 

@@ -5,10 +5,14 @@ Approaches:
 - SIFT (non-free)
 
 - Gate template image / Template Matching
+	- Template of entire gate
+	- Template of chess pattern
 
 - Find gate in image
 
 - Deep neural network
+	- Learning not good with OpenCV
+	- Ask Elsa
 
 - Hough Lines
 	- Detect vertical lines
