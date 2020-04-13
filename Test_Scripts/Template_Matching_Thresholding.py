@@ -8,11 +8,15 @@ Created on Wed Apr  8 15:02:15 2020
 To Do:
     - Filter single matches far away
     - Only allow reasonable aspect ratios
+    - Filter matches from gates behind
+    - Add second, horizontal chess template
 """
 
 import cv2 as cv
 import numpy as np
+import extrapolate_missing_corners as ext
 from matplotlib import pyplot as plt
+import time
 
 def rescale(img, scale_percent):
     # Scale image resolution
@@ -24,13 +28,64 @@ def rescale(img, scale_percent):
     scaled = cv.resize(img, dim, interpolation = cv.INTER_AREA)
     return scaled
 
+def draw_gate(mask, corners, img):
+    pt_1 = [corners[1][0], corners[0][0]]
+    pt_2 = [corners[1][1], corners[0][1]]
+    pt_3 = [corners[1][2], corners[0][2]]
+    pt_4 = [corners[1][3], corners[0][3]]
+        
+    width_gate = max(corners[0]) - min(corners[0])
+    height_gate = max(corners[1]) - min(corners[1])
+    mean_gate_size = (width_gate + height_gate) / 2
+    bar_thickness = mean_gate_size * ratio_bar_to_gate_size
+    
+    line_width = int(round(bar_thickness, 0))
+    if line_width == 0: line_width = 1
+    
+    color = (255, 255, 255)
+    
+    #cv.line(mask, pt_1, pt_2, color, line_width) # make corners sharp instead of round
+    #cv.line(mask, pt_2, pt_4, color, line_width)
+    #cv.line(mask, pt_4, pt_3, color, line_width)
+    #cv.line(mask, pt_3, pt_1, color, line_width)
+    
+    points = np.array([pt_1, pt_2, pt_4, pt_3])
+    cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
+    
+    cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    
+    return mask
+
+def reject_outliers2(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else 0.
+    return data[s<m]
+
+def reject_outliers4(data, m=2):
+    x = data[0][np.logical_and(abs(data[0] - np.mean(data[0])) <= m * np.std(data[0]), abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))]
+    y = data[1][np.logical_and(abs(data[0] - np.mean(data[0])) <= m * np.std(data[0]), abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))]
+    return (x, y)
+
+def reject_outliers(data, m=2):
+    tmp = np.logical_and(abs(data[0] - np.mean(data[0])) <= m * np.std(data[0]), abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
+    return (data[0][tmp], data[1][tmp])
+
+def reject_outliers3(data, m=2):
+    return data[abs(data - np.mean(data)) <= m * np.std(data)]
+
 
 template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template2.png'
 template = cv.imread(template_name,0)
 
 ratio_bar_to_gate_size = 1/7.5 # relative thickness of gate bar
+global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
+
+runtime = 0
 
 for num in range(438):
+    start = time.perf_counter()
 
     filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
     
@@ -48,22 +103,24 @@ for num in range(438):
     # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
     # But also remember to consider frames where one corner is hidden
     # Lower threshold means more computational effort
-    i = 150
-    step = 2
+    scale_max = 160
+    scale_min = 45
+    scale = scale_max
+    step = 7
     
     res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
     loc = np.where(res >= match_thresh)
     loc = list(loc)
     
-    while i >= 40: # Take a look at online tutorial
-        template_scaled = rescale(template, i)
+    while scale >= scale_min: # Take a look at online tutorial
+        template_scaled = rescale(template, scale)
         res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
         loc_tmp = np.where( res >= match_thresh)
         loc_tmp = list(loc_tmp)
         loc[0] = np.append(loc[0], loc_tmp[0])
         loc[1] = np.append(loc[1], loc_tmp[1])
     
-        i = i - step
+        scale = scale - step
         
     #print(loc) # first is 0/1 = x/y, second is coordinate
     x_min = 0
@@ -71,6 +128,7 @@ for num in range(438):
     y_min = 0
     y_max = height-1
     if len(loc[0]) > 0:
+        #loc = reject_outliers(loc)
         x_min = min(loc[0])
         x_max = max(loc[0])
         y_min = min(loc[1])
@@ -108,42 +166,52 @@ for num in range(438):
     print('Corner 3 matches: ', len(corner_3[0]))
     print('Corner 4 matches: ', len(corner_4[0]))'''
     
-    corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
+    local_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
+    num_corners = 0
     
     # Calculate mean coordinates of all four corners
+    # if min/max is used, the rounding can be removed
     if len(corner_1[0]) > 0:
-        corners[0][0] = int(round(np.mean(corner_1[0]), 0))
-        corners[1][0] = int(round(np.mean(corner_1[1]), 0))
+        #corner_1[0] = reject_outliers(corner_1[0])
+        #corner_1[1] = reject_outliers(corner_1[1])
+        corner_1 = reject_outliers(corner_1)
+        local_corners[0][0] = int(round(np.min(corner_1[0]), 0))
+        local_corners[1][0] = int(round(np.min(corner_1[1]), 0))
+        num_corners += 1
         
     if len(corner_2[0]) > 0:
-        corners[0][1] = int(round(np.mean(corner_2[0]), 0))
-        corners[1][1] = int(round(np.mean(corner_2[1]), 0))
+        #corner_2[0] = reject_outliers(corner_2[0])
+        #corner_2[1] = reject_outliers(corner_2[1])
+        corner_2 = reject_outliers(corner_2)
+        local_corners[0][1] = int(round(np.min(corner_2[0]), 0))
+        local_corners[1][1] = int(round(np.max(corner_2[1]), 0))
+        num_corners += 1
         
     if len(corner_3[0]) > 0:
-        corners[0][2] = int(round(np.mean(corner_3[0]), 0))
-        corners[1][2] = int(round(np.mean(corner_3[1]), 0))
+        #corner_3[0] = reject_outliers(corner_3[0])
+        #corner_3[1] = reject_outliers(corner_3[1])
+        corner_3 = reject_outliers(corner_3)
+        local_corners[0][2] = int(round(np.max(corner_3[0]), 0))
+        local_corners[1][2] = int(round(np.min(corner_3[1]), 0))
+        num_corners += 1
         
     if len(corner_4[0]) > 0:
-        corners[0][3] = int(round(np.mean(corner_4[0]), 0))
-        corners[1][3] = int(round(np.mean(corner_4[1]), 0))
+        #corner_4[0] = reject_outliers(corner_4[0])
+        #corner_4[1] = reject_outliers(corner_4[1])
+        corner_4 = reject_outliers(corner_4)
+        local_corners[0][3] = int(round(np.max(corner_4[0]), 0))
+        local_corners[1][3] = int(round(np.max(corner_4[1]), 0))
+        num_corners += 1
+
+    #print('Corners found: ', num_corners)
+    # Filter matches that are far away from mean value
         
-    # If one corner is missing, estimate coordinates based on given corners
-    if corners[0][0] == 0 and corners[1][0] == 0:
-        corners[0][0] = corners[0][1]
-        corners[1][0] = corners[1][2]
-        
-    if corners[0][1] == 0 and corners[1][1] == 0:
-        corners[0][1] = corners[0][0]
-        corners[1][1] = corners[1][3]
-        
-    if corners[0][2] == 0 and corners[1][2] == 0:
-        corners[0][2] = corners[0][3]
-        corners[1][2] = corners[1][0]
-        
-    if corners[0][3] == 0 and corners[1][3] == 0:
-        corners[0][3] = corners[0][2]
-        corners[1][3] = corners[1][1]
-    
+    # Extrapolate corners if missing
+    if num_corners == 4:
+        global_corners = local_corners
+    if num_corners == 3 or num_corners == 2:
+        global_corners = ext.extrapolate_corners(local_corners, num_corners)
+    # If only one or zero corners were found, reuse last global corners
     
     '''print('Corner 1: ', corners[0][0], ', ', corners[1][0])
     print('Corner 2: ', corners[0][1], ', ', corners[1][1])
@@ -152,34 +220,27 @@ for num in range(438):
     
     mask = np.zeros((img_gray.shape[0], img_gray.shape[1], 3), dtype=np.uint8)
     
-    pt_1 = (corners[1][0], corners[0][0])
-    pt_2 = (corners[1][1], corners[0][1])
-    pt_3 = (corners[1][2], corners[0][2])
-    pt_4 = (corners[1][3], corners[0][3])
+    if global_corners != ([0,0,0,0],[0,0,0,0]):
+        mask = draw_gate(mask, global_corners, img_rgb)
         
-    width_gate = max(corners[0]) - min(corners[0])
-    height_gate = max(corners[1]) - min(corners[1])
-    mean_gate_size = (width_gate + height_gate) / 2
-    bar_thickness = mean_gate_size * ratio_bar_to_gate_size
-    
-    line_width = int(round(bar_thickness, 0))
-    if line_width == 0: line_width = 1
-    
-    cv.line(mask, pt_1, pt_2, (255, 255, 255), line_width) # make corners sharp instead of round
-    cv.line(mask, pt_2, pt_4, (255, 255, 255), line_width)
-    cv.line(mask, pt_4, pt_3, (255, 255, 255), line_width)
-    cv.line(mask, pt_3, pt_1, (255, 255, 255), line_width)
+    end = time.perf_counter()
         
     w, h = template.shape[::-1]
     for pt in zip(*loc[::-1]):
-        cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+        #cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+        cv.circle(img_rgb, pt, 5, (0,0,255), 2)
         
     img_combined = cv.hconcat([img_rgb, mask])
         
     cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/img_' + str(num+1) + '.png',img_rgb)
     cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
     cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
-    #print(round(num/438*100, 0), ' %')
+    print(round(num/438*100, 0), ' %')
+    
+    if (end-start) > runtime: runtime = end-start
+    #print(end-start)
+
+print(f'Maximum runtime: {runtime:0.4f}')
 
 #plt.subplot(121),plt.imshow(img_rgb)
 #plt.title('Matches')#, plt.xticks([]), plt.yticks([])
