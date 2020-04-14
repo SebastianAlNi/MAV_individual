@@ -3,11 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import warnings
+from Template_Matching_Thresholding import template_matching_thresholding
 
 if sys.version_info[0] < 3:
     warnings.warn("This script should run using Python 3, which is currently not the case. The plot might not generate correctly.")
 
-path = '../../../WashingtonOBRace/'
+path = '../../WashingtonOBRace/'
 
 
 def my_obstacle_filter(im, param):
@@ -43,13 +44,16 @@ def generate_ROC_plot():
     """ Generates a simple ROC plot"""
     plot_data = []
     n_images = 438    # Number of images in folder
-    #for param in np.linspace(0.0, 1.0, 10):
-    for i in range(1):
+    for param in np.linspace(0.6, 0.9, 10):
+    #for i in range(1):
         # Initialize totals
         true_positives = 0
         false_positives = 0
         ground_truth_positives = 0
         ground_truth_negatives = 0
+        
+        print('Current parameter: ', param)
+        template_matching_thresholding(param)
 
         for i in range(1, n_images + 1):
             # Set image paths
@@ -87,8 +91,8 @@ def generate_ROC_plot():
         # Calculate rates
         false_positive_rate = false_positives / ground_truth_negatives
         true_positive_rate = true_positives / ground_truth_positives
-        print(false_positive_rate)
-        print(true_positive_rate)
+        print('False Positive: ', false_positive_rate)
+        print('True Positive: ', true_positive_rate)
 
         # Add datapoint to plot_data
         plot_data.append((false_positive_rate, true_positive_rate))
