@@ -3,29 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import warnings
-<<<<<<< HEAD
-<<<<<<< HEAD
 import Template_Matching_Thresholding
-=======
-from Template_Matching_Thresholding import template_matching_thresholding
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
-=======
-from Template_Matching_Thresholding import template_matching_thresholding
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 
 if sys.version_info[0] < 3:
     warnings.warn("This script should run using Python 3, which is currently not the case. The plot might not generate correctly.")
 
 path = '../../WashingtonOBRace/'
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
-=======
-
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 def my_obstacle_filter(im, param):
     """ An example of a filter that can be used to generate ROC curves.
     This filter is a simple color filter around orange. Replace this with your own filter.
@@ -59,15 +43,8 @@ def generate_ROC_plot():
     """ Generates a simple ROC plot"""
     plot_data = []
     n_images = 438    # Number of images in folder
-<<<<<<< HEAD
-<<<<<<< HEAD
-    for param in np.linspace(0.5, 1.0, 11):
-=======
-    for param in np.linspace(0.6, 0.9, 10):
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
-=======
-    for param in np.linspace(0.6, 0.9, 10):
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
+    
+    for param in np.linspace(0.5, 1.0, 5):
     #for i in range(1):
         # Initialize totals
         true_positives = 0
@@ -81,30 +58,15 @@ def generate_ROC_plot():
         for i in range(1, n_images + 1):
             # Set image paths
             #original_path = path + 'WashingtonOBRace/img_' + str(i) + '.png'
-<<<<<<< HEAD
-<<<<<<< HEAD
+            
             ground_truth_path = path + 'WashingtonOBRace/Scaled_Masks/mask_' + str(i) + '.png'
-=======
-            ground_truth_path = path + 'WashingtonOBRace/mask_' + str(i) + '.png'
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
-=======
-            ground_truth_path = path + 'WashingtonOBRace/mask_' + str(i) + '.png'
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
             filter_path = path + 'Output/mask_' + str(i) + '.png'
 
             # Analyze ground truth image
             try:
                 ground_truth_im = Image.open(ground_truth_path, 'r')
             except:
-<<<<<<< HEAD
-<<<<<<< HEAD
                 #print('image ', i, ' exception')
-=======
-                print('image ', i, ' exception')
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
-=======
-                print('image ', i, ' exception')
->>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
                 continue
             
             ground_truth_im = ground_truth_im.convert("RGB")

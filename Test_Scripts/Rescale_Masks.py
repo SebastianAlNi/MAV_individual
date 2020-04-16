@@ -21,14 +21,14 @@ def rescale(img, scale_percent):
 
 def scale_masks(scale):
     for num in range(438):
-        filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/mask_' + str(num+1) + '.png'
+        filename = '../../WashingtonOBRace/WashingtonOBRace/mask_' + str(num+1) + '.png'
         try:
             mask = cv.imread(filename)
             mask = rescale(mask, scale)
         except:
             continue    
         
-        out_file = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/Scaled_Masks/mask_' + str(num+1) + '.png'
+        out_file = '../../WashingtonOBRace/WashingtonOBRace/Scaled_Masks/mask_' + str(num+1) + '.png'
         cv.imwrite(out_file,mask)
         
     return 0

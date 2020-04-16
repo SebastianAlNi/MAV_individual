@@ -28,8 +28,16 @@ from matplotlib import pyplot as plt
 import time
 
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 threshold = 0.89 # 0.84
 # tradeoff between falsely detected patterns and undetected true patterns
+=======
+threshold = 0.85 # tradeoff between falsely detected patterns and undetected true patterns
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
+=======
+threshold = 0.85 # tradeoff between falsely detected patterns and undetected true patterns
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
 # But also remember to consider frames where one corner is hidden
 # Lower threshold means more computational effort
@@ -80,20 +88,44 @@ def reject_outliers(data, m=2):
 
 def template_matching_thresholding(match_thresh):
 
-    template_name = '../../WashingtonOBRace/Templates/chess_template8.png'
+<<<<<<< HEAD
+<<<<<<< HEAD
+    template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template7.png'
+    template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template7rot.png'
+    template = cv.imread(template_name,0)
+    template2 = cv.imread(template_name_2,0)
+    
+    global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
+    
+    max_runtime = 0
+    min_runtime = 10
+=======
+    template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
     template = cv.imread(template_name,0)
     #template2 = cv.imread(template_name_2,0)
     
     global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
     
-    max_runtime = 0
-    min_runtime = 10
+    runtime = 0
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
     
     for num in range(438):
         start = time.perf_counter()
+        
+    template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template8.png'
+    #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
+    template = cv.imread(template_name,0)
+    #template2 = cv.imread(template_name_2,0)
     
-        filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
+    global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
+    
+    runtime = 0
+    
+    for num in range(438):
+        start = time.perf_counter()
+        
+        filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
         
         img_rgb = cv.imread(filename)
             
@@ -105,7 +137,6 @@ def template_matching_thresholding(match_thresh):
         
         width, height = img_gray.shape[::-1]
         dist_thresh = 20 # make dependent from height and/or width by subtracting min and max coordinates
-        
         scale_max = 105 # 150
         scale_min = 40 # 50, do not go below 40
         scale = scale_max
@@ -118,7 +149,11 @@ def template_matching_thresholding(match_thresh):
         
         while scale >= scale_min: # Take a look at online tutorial
             template_scaled = rescale(template, scale)
+            #template_scaled2 = rescale(template2, scale)
             res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
+            #res2 = cv.matchTemplate(img_gray,template_scaled2,cv.TM_CCOEFF_NORMED)
+            #loc_tmp = np.where(np.logical_or(res >= match_thresh, res2 >= match_thresh))
+            loc_tmp = np.where( res >= match_thresh)
             loc_tmp = np.where( res >= match_thresh)
             #loc_tmp = list(loc_tmp)
             loc[0] = np.append(loc[0], loc_tmp[0])
@@ -202,7 +237,7 @@ def template_matching_thresholding(match_thresh):
         # Extrapolate corners if missing
         if num_corners == 4:
             global_corners = local_corners
-        if num_corners == 3 or num_corners == 2:
+        elif num_corners == 3 or num_corners == 2:
             global_corners = extrapolate_corners(local_corners, num_corners)
         # If only one or zero corners were found, reuse last global corners
         
@@ -227,17 +262,20 @@ def template_matching_thresholding(match_thresh):
         cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
         cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
         print(round(num/438*100, 0), ' %')
-        
         if (end-start) > max_runtime: max_runtime = end-start
         if (end-start) < min_runtime: min_runtime = end-start
         #print(end-start)
     
     print(f'Maximum runtime: {max_runtime:0.4f}')
     print(f'Minimum runtime: {min_runtime:0.4f}')
+        if (end-start) > runtime: runtime = end-start
+        #print(end-start)
+    
+    print(f'Maximum runtime: {runtime:0.4f}')
     
     return 0
 
-#template_matching_thresholding(threshold)
+template_matching_thresholding(threshold)
 
 #plt.subplot(121),plt.imshow(img_rgb)
 #plt.title('Matches')#, plt.xticks([]), plt.yticks([])
