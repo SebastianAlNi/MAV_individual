@@ -17,9 +17,12 @@ To Do:
         - (min, max scale)
         - ratio bar to gate size
 <<<<<<< HEAD
+<<<<<<< HEAD
         - Rejection parameter m
         - Original image scale
     - Way faster if original image is scaled down
+=======
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
 >>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 """
@@ -32,8 +35,12 @@ import time
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 threshold = 0.89 # 0.84
 # tradeoff between falsely detected patterns and undetected true patterns
+=======
+threshold = 0.85 # tradeoff between falsely detected patterns and undetected true patterns
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
 threshold = 0.85 # tradeoff between falsely detected patterns and undetected true patterns
 >>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
@@ -88,6 +95,7 @@ def reject_outliers(data, m=2):
 def template_matching_thresholding(match_thresh):
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template7.png'
     template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template7rot.png'
     template = cv.imread(template_name,0)
@@ -111,13 +119,30 @@ def template_matching_thresholding(match_thresh):
     for num in range(438):
         start = time.perf_counter()
     
+=======
+    template_name = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template8.png'
+    #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
+    template = cv.imread(template_name,0)
+    #template2 = cv.imread(template_name_2,0)
+    
+    global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
+    
+    runtime = 0
+    
+    for num in range(438):
+        start = time.perf_counter()
+    
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
         filename = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
         
         img_rgb = cv.imread(filename)
             
         try:
 <<<<<<< HEAD
+<<<<<<< HEAD
             img_rgb = rescale(img_rgb, 70)
+=======
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
 >>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
             img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
@@ -128,8 +153,13 @@ def template_matching_thresholding(match_thresh):
         dist_thresh = 20 # make dependent from height and/or width by subtracting min and max coordinates
         
 <<<<<<< HEAD
+<<<<<<< HEAD
         scale_max = 105 # 150
         scale_min = 40 # 50, do not go below 40
+=======
+        scale_max = 150
+        scale_min = 50
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
         scale_max = 150
         scale_min = 50
@@ -145,10 +175,15 @@ def template_matching_thresholding(match_thresh):
         while scale >= scale_min: # Take a look at online tutorial
             template_scaled = rescale(template, scale)
 <<<<<<< HEAD
+<<<<<<< HEAD
             template_scaled2 = rescale(template2, scale)
             res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
             res2 = cv.matchTemplate(img_gray,template_scaled2,cv.TM_CCOEFF_NORMED)
             loc_tmp = np.where(np.logical_or(res >= match_thresh, res2 >= match_thresh))
+=======
+            res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
+            loc_tmp = np.where( res >= match_thresh)
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
             res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
             loc_tmp = np.where( res >= match_thresh)
@@ -236,7 +271,11 @@ def template_matching_thresholding(match_thresh):
         if num_corners == 4:
             global_corners = local_corners
 <<<<<<< HEAD
+<<<<<<< HEAD
         elif num_corners == 3 or num_corners == 2:
+=======
+        if num_corners == 3 or num_corners == 2:
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
 =======
         if num_corners == 3 or num_corners == 2:
 >>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
@@ -266,6 +305,7 @@ def template_matching_thresholding(match_thresh):
         print(round(num/438*100, 0), ' %')
         
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (end-start) > max_runtime: max_runtime = end-start
         if (end-start) < min_runtime: min_runtime = end-start
         #print(end-start)
@@ -273,10 +313,15 @@ def template_matching_thresholding(match_thresh):
     print(f'Maximum runtime: {max_runtime:0.4f}')
     print(f'Minimum runtime: {min_runtime:0.4f}')
 =======
+=======
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
         if (end-start) > runtime: runtime = end-start
         #print(end-start)
     
     print(f'Maximum runtime: {runtime:0.4f}')
+<<<<<<< HEAD
+>>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
+=======
 >>>>>>> 563f0c6c19c0aecdcbc17993ea25cc30066f38b0
     
     return 0
