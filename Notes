@@ -7,6 +7,8 @@ Approaches:
 - Gate template image / Template Matching
 	- Template of entire gate
 	- Template of chess pattern
+	- Limitations:
+		- Rotated gate, small rotation due to image distortion is okay
 
 - Find gate in image
 
