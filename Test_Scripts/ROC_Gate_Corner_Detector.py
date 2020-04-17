@@ -44,7 +44,7 @@ def generate_ROC_plot():
     plot_data = []
     n_images = 438    # Number of images in folder
     
-    for param in np.linspace(0.5, 1.0, 5):
+    for param in np.linspace(0.5, 1.0, 11):
     #for i in range(1):
         # Initialize totals
         true_positives = 0

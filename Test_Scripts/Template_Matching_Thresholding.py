@@ -6,10 +6,8 @@ Created on Wed Apr  8 15:02:15 2020
 @author: ziemersky
 
 To Do:
-    - Filter single matches far away
     - Only allow reasonable aspect ratios:
         - Check aspect ratio at corner distribution or at extrapolation?
-    - Filter matches from gates behind
     - Add second, horizontal chess template
     - Sensitivity study through different ROC curves, parameters:
         - Threshold
@@ -18,7 +16,15 @@ To Do:
         - ratio bar to gate size
         - Rejection parameter m
         - Original image scale
+        - Template Matching method
     - Way faster if original image is scaled down
+    - Parallelize?
+    - Calculate mean runtime
+    
+Done:
+    - Filter single matches far away: reject_outliers
+    - Filter matches from gates behind: Only use min/max corner matches
+    
 """
 
 import cv2 as cv
@@ -28,18 +34,18 @@ from matplotlib import pyplot as plt
 import time
 
 
-threshold = 0.89 # 0.84
+threshold = 0.97 # 0.89 for cv.TM_CCOEFF_NORMED, 0.97 for cv.TM_CCORR_NORMED
 # tradeoff between falsely detected patterns and undetected true patterns
 # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
 # But also remember to consider frames where one corner is hidden
 # Lower threshold means more computational effort
 ratio_bar_to_gate_size = 1/7.5 # relative thickness of gate bar
 
-def rescale(img, scale_percent):
+def rescale(img, scale):
     # Scale image resolution
     #scale_percent = 100 # percent of original size
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
     dim = (width, height)
     # resize image
     scaled = cv.resize(img, dim, interpolation = cv.INTER_AREA)
@@ -80,7 +86,7 @@ def reject_outliers(data, m=2):
 
 def template_matching_thresholding(match_thresh):
 
-    template_name = '../../WashingtonOBRace/Templates/chess_template8.png'
+    template_name = 'Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
     template = cv.imread(template_name,0)
     #template2 = cv.imread(template_name_2,0)
@@ -89,6 +95,9 @@ def template_matching_thresholding(match_thresh):
     
     max_runtime = 0
     min_runtime = 10
+    max_loc_runtime = 0
+    time_count = 0
+    times = 0
     
     for num in range(438):
         start = time.perf_counter()
@@ -98,35 +107,30 @@ def template_matching_thresholding(match_thresh):
         img_rgb = cv.imread(filename)
             
         try:
-            img_rgb = rescale(img_rgb, 70)
+            img_rgb = rescale(img_rgb, 0.7)
             img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
         except:
             continue
         
-        width, height = img_gray.shape[::-1]
-        dist_thresh = 20 # make dependent from height and/or width by subtracting min and max coordinates
-        
-        scale_max = 105 # 150
-        scale_min = 40 # 50, do not go below 40
+        scale_max = 1 # 1.5
+        scale_min = 0.4 # 0.5, do not go below 0.4 or 0.35
         scale = scale_max
-        step = 5
+        step = 0.05
         
-        #res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
-        #loc = np.where(res >= match_thresh)
-        #loc = list(loc)
         loc = [[],[]]
-        
         while scale >= scale_min: # Take a look at online tutorial
             template_scaled = rescale(template, scale)
-            res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCOEFF_NORMED)
-            loc_tmp = np.where( res >= match_thresh)
-            #loc_tmp = list(loc_tmp)
+            res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCORR_NORMED) #TM_CCOEFF_NORMED
+            loc_tmp = np.where(res >= match_thresh)
+            
             loc[0] = np.append(loc[0], loc_tmp[0])
             loc[1] = np.append(loc[1], loc_tmp[1])
         
             scale = scale - step
             
-        #print(loc) # first is 0/1 = x/y, second is coordinate
+            
+        #print(loc) # first is 0/1 = x/y, second is coordinate        
+        width, height = img_gray.shape[::-1]
         x_min = 0
         x_max = width-1
         y_min = 0
@@ -139,20 +143,34 @@ def template_matching_thresholding(match_thresh):
             y_max = max(loc[1])
         # Check for minimum distance between max and min values, if it is too low, repeat with different threshold
         
-        x_c = (x_min + x_max) / 2
-        y_c = (y_min + y_max) / 2
-        corner_1 = [[], []] # top left
+        x_c = int(x_min + x_max) / 2
+        y_c = int(y_min + y_max) / 2
+        
+        # Sort matches to corners
+        tmp = np.logical_and(loc[0] <= x_c, loc[1] <= y_c)
+        corner_1 = (loc[0][tmp], loc[1][tmp])
+        
+        tmp = np.logical_and(loc[0] <= x_c, loc[1] >= y_c)
+        corner_2 = (loc[0][tmp], loc[1][tmp])
+        
+        tmp = np.logical_and(loc[0] >= x_c, loc[1] <= y_c)
+        corner_3 = (loc[0][tmp], loc[1][tmp])
+        
+        tmp = np.logical_and(loc[0] >= x_c, loc[1] >= y_c)
+        corner_4 = (loc[0][tmp], loc[1][tmp])
+        
+             
+        '''corner_1 = [[], []] # top left
         corner_2 = [[], []] # top right
         corner_3 = [[], []] # bottom left
         corner_4 = [[], []] # bottom right
         
-        # Sort matches to corners
         for j in range(len(loc[0])):
             if loc[0][j] <= x_c and loc[1][j] <= y_c:
                 corner_1[0] = np.append(corner_1[0], loc[0][j])
                 corner_1[1] = np.append(corner_1[1], loc[1][j])
                 
-            elif loc[0][j] <= x_c and loc[1][j] >= y_c:
+            if loc[0][j] <= x_c and loc[1][j] >= y_c:
                 corner_2[0] = np.append(corner_2[0], loc[0][j])
                 corner_2[1] = np.append(corner_2[1], loc[1][j])
                 
@@ -162,13 +180,7 @@ def template_matching_thresholding(match_thresh):
                 
             elif loc[0][j] >= x_c and loc[1][j] >= y_c:
                 corner_4[0] = np.append(corner_4[0], loc[0][j])
-                corner_4[1] = np.append(corner_4[1], loc[1][j])
-                    
-        '''print('Total matches: ',len(loc[0]))
-        print('Corner 1 matches: ', len(corner_1[0]))
-        print('Corner 2 matches: ', len(corner_2[0]))
-        print('Corner 3 matches: ', len(corner_3[0]))
-        print('Corner 4 matches: ', len(corner_4[0]))'''
+                corner_4[1] = np.append(corner_4[1], loc[1][j])'''
         
         local_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
         num_corners = 0
@@ -199,6 +211,7 @@ def template_matching_thresholding(match_thresh):
             local_corners[1][3] = np.max(corner_4[1])
             num_corners += 1
             
+        #print(local_corners)
         # Extrapolate corners if missing
         if num_corners == 4:
             global_corners = local_corners
@@ -212,7 +225,7 @@ def template_matching_thresholding(match_thresh):
             mask = draw_gate(mask, global_corners, img_rgb)
             
         end = time.perf_counter()
-            
+        
         #w, h = template.shape[::-1]
         #for pt in zip(*loc[::-1]):
             #cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
@@ -223,21 +236,26 @@ def template_matching_thresholding(match_thresh):
         
         img_combined = cv.hconcat([img_rgb, mask])
             
-        cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/img_' + str(num+1) + '.png',img_rgb)
-        cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
-        cv.imwrite('/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
+        cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num+1) + '.png',img_rgb)
+        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
+        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
         print(round(num/438*100, 0), ' %')
         
         if (end-start) > max_runtime: max_runtime = end-start
         if (end-start) < min_runtime: min_runtime = end-start
-        #print(end-start)
+        time_count += end-start
+        times += 1
+        #if (end_loc-start_loc) > max_loc_runtime: max_loc_runtime = end_loc-start_loc
     
+    mean_runtime = time_count/times
     print(f'Maximum runtime: {max_runtime:0.4f}')
     print(f'Minimum runtime: {min_runtime:0.4f}')
+    print(f'Mean runtime: {mean_runtime:0.4f}')
+    #print(f'Maximum local runtime: {max_loc_runtime:0.4f}')
     
     return 0
 
-#template_matching_thresholding(threshold)
+template_matching_thresholding(threshold)
 
 #plt.subplot(121),plt.imshow(img_rgb)
 #plt.title('Matches')#, plt.xticks([]), plt.yticks([])
