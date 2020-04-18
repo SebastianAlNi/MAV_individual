@@ -21,3 +21,11 @@ Approaches:
 	- connect them
 	- exclude lines without connections
 	- add width of gate dependent on overall size (corresponding to distance)
+
+ROC Curve:
+- IoU not possible?
+	- Only one rectangle per image is detected
+	- So it's either true or false, therefore true = (1-false)
+
+- Compare polyongs
+- Compare filled poygons

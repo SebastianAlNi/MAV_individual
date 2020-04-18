@@ -19,7 +19,7 @@ To Do:
         - Template Matching method
     - Way faster if original image is scaled down
     - Parallelize?
-    - Calculate mean runtime
+    - Adapt polygon size, make smaller so that it is closer to the ground truth
     
 Done:
     - Filter single matches far away: reject_outliers
@@ -34,7 +34,7 @@ from matplotlib import pyplot as plt
 import time
 
 
-threshold = 0.97 # 0.89 for cv.TM_CCOEFF_NORMED, 0.97 for cv.TM_CCORR_NORMED
+threshold = 0.96 # 0.89 for cv.TM_CCOEFF_NORMED, 0.96 for cv.TM_CCORR_NORMED
 # tradeoff between falsely detected patterns and undetected true patterns
 # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
 # But also remember to consider frames where one corner is hidden
@@ -73,15 +73,17 @@ def draw_gate(mask, corners, img):
     #cv.line(mask, pt_3, pt_1, color, line_width)
     
     points = np.array([pt_1, pt_2, pt_4, pt_3])
-    cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
+    #cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
     
     cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     
+    cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
+    
     return mask
 
 def reject_outliers(data, m=2):
-    tmp = np.logical_and(abs(data[0] - np.mean(data[0])) <= m * np.std(data[0]), abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
+    tmp = (abs(data[0] - np.mean(data[0])) <= m * np.std(data[0])) & (abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
     return (data[0][tmp], data[1][tmp])
 
 def template_matching_thresholding(match_thresh):
@@ -99,10 +101,10 @@ def template_matching_thresholding(match_thresh):
     time_count = 0
     times = 0
     
-    for num in range(438):
+    for num in range(439):
         start = time.perf_counter()
     
-        filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
+        filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num) + '.png'
         
         img_rgb = cv.imread(filename)
             
@@ -147,16 +149,16 @@ def template_matching_thresholding(match_thresh):
         y_c = int(y_min + y_max) / 2
         
         # Sort matches to corners
-        tmp = np.logical_and(loc[0] <= x_c, loc[1] <= y_c)
+        tmp = (loc[0] <= x_c) & (loc[1] <= y_c)
         corner_1 = (loc[0][tmp], loc[1][tmp])
         
-        tmp = np.logical_and(loc[0] <= x_c, loc[1] >= y_c)
+        tmp = (loc[0] <= x_c) & (loc[1] >= y_c)
         corner_2 = (loc[0][tmp], loc[1][tmp])
         
-        tmp = np.logical_and(loc[0] >= x_c, loc[1] <= y_c)
+        tmp = (loc[0] >= x_c) & (loc[1] <= y_c)
         corner_3 = (loc[0][tmp], loc[1][tmp])
         
-        tmp = np.logical_and(loc[0] >= x_c, loc[1] >= y_c)
+        tmp = (loc[0] >= x_c) & (loc[1] >= y_c)
         corner_4 = (loc[0][tmp], loc[1][tmp])
         
              
@@ -236,10 +238,10 @@ def template_matching_thresholding(match_thresh):
         
         img_combined = cv.hconcat([img_rgb, mask])
             
-        cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num+1) + '.png',img_rgb)
-        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
-        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
-        print(round(num/438*100, 0), ' %')
+        cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num) + '.png',img_rgb)
+        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)
+        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)
+        #print(round(num/438*100, 0), ' %')
         
         if (end-start) > max_runtime: max_runtime = end-start
         if (end-start) < min_runtime: min_runtime = end-start
@@ -248,8 +250,8 @@ def template_matching_thresholding(match_thresh):
         #if (end_loc-start_loc) > max_loc_runtime: max_loc_runtime = end_loc-start_loc
     
     mean_runtime = time_count/times
-    print(f'Maximum runtime: {max_runtime:0.4f}')
-    print(f'Minimum runtime: {min_runtime:0.4f}')
+    #print(f'Maximum runtime: {max_runtime:0.4f}')
+    #print(f'Minimum runtime: {min_runtime:0.4f}')
     print(f'Mean runtime: {mean_runtime:0.4f}')
     #print(f'Maximum local runtime: {max_loc_runtime:0.4f}')
     

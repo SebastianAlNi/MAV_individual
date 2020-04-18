@@ -9,11 +9,11 @@ Created on Thu Apr 16 12:00:13 2020
 import cv2 as cv
 import numpy as np
 
-def rescale(img, scale_percent):
+def rescale(img, scale):
     # Scale image resolution
     #scale_percent = 100 # percent of original size
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
     dim = (width, height)
     # resize image
     scaled = cv.resize(img, dim, interpolation = cv.INTER_AREA)
@@ -21,7 +21,7 @@ def rescale(img, scale_percent):
 
 def scale_masks(scale):
     for num in range(438):
-        filename = '../../WashingtonOBRace/WashingtonOBRace/mask_' + str(num+1) + '.png'
+        filename = '../../WashingtonOBRace/WashingtonOBRace/Ground_Truth_Polygons/img_' + str(num+1) + '.png'
         try:
             mask = cv.imread(filename)
             mask = rescale(mask, scale)
@@ -33,4 +33,4 @@ def scale_masks(scale):
         
     return 0
 
-scale_masks(70)
+scale_masks(0.7)
