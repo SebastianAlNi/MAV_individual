@@ -26,6 +26,13 @@ ROC Curve:
 - IoU not possible?
 	- Only one rectangle per image is detected
 	- So it's either true or false, therefore true = (1-false)
+	- True positive ratio can never become 1 because:
+		- If nothing is detected, it will be zero (bottom left)
+		- If the entire image is detected, it will also become zero (bottom right)
+		- It becomes only one, if all detections are within threshold, but then the false positive rate is not one
+		-> Works only if several polygons are detected wout of which many can be considered false negatives (???)
+		- My algorithm always only detects one polygon -> there is no "average (absolute) number of false positives per image"
+	- Doe false positive ratio always have to go all the way to one?
 
 - Compare polyongs
 - Compare filled poygons

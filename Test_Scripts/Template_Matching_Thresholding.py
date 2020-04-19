@@ -18,12 +18,13 @@ To Do:
         - Original image scale
         - Template Matching method
     - Way faster if original image is scaled down
-    - Parallelize?
     - Adapt polygon size, make smaller so that it is closer to the ground truth
+    - Autmatically create Output folder in original image directory, if it doesn't exist yet
     
 Done:
     - Filter single matches far away: reject_outliers
     - Filter matches from gates behind: Only use min/max corner matches
+    - Parallelize -> global corner won't work
     
 """
 
@@ -34,7 +35,7 @@ from matplotlib import pyplot as plt
 import time
 
 
-threshold = 0.96 # 0.89 for cv.TM_CCOEFF_NORMED, 0.96 for cv.TM_CCORR_NORMED
+#threshold = 0.96 # 0.89 for cv.TM_CCOEFF_NORMED, 0.96 for cv.TM_CCORR_NORMED
 # tradeoff between falsely detected patterns and undetected true patterns
 # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
 # But also remember to consider frames where one corner is hidden
@@ -51,11 +52,32 @@ def rescale(img, scale):
     scaled = cv.resize(img, dim, interpolation = cv.INTER_AREA)
     return scaled
 
-def draw_gate(mask, corners, img):
+def draw_gate(mask, img, corners, shrink_factor = 0):
+    
     pt_1 = [corners[1][0], corners[0][0]]
     pt_2 = [corners[1][1], corners[0][1]]
     pt_3 = [corners[1][2], corners[0][2]]
     pt_4 = [corners[1][3], corners[0][3]]
+    
+    # Shrink polygon corners to fit inner rectangle of gate
+    if shrink_factor != 0:
+        shrink_dist_ratio = (1 - shrink_factor) / 2
+        dist_12 = abs(pt_2[0] - pt_1[0])
+        dist_24 = abs(pt_4[1] - pt_2[1])
+        dist_43 = abs(pt_3[0] - pt_4[0])
+        dist_31 = abs(pt_1[1] - pt_3[1])
+        
+        pt_1[0] = pt_1[0] + dist_12 * shrink_dist_ratio * 2
+        pt_1[1] = pt_1[1] + dist_31 * shrink_dist_ratio
+        
+        pt_2[0] = pt_2[0] - dist_12 * shrink_dist_ratio
+        pt_2[1] = pt_2[1] + dist_24 * shrink_dist_ratio
+        
+        pt_3[0] = pt_3[0] + dist_43 * shrink_dist_ratio * 2
+        pt_3[1] = pt_3[1] - dist_31 * shrink_dist_ratio
+        
+        pt_4[0] = pt_4[0] - dist_43 * shrink_dist_ratio
+        pt_4[1] = pt_4[1] - dist_24 * shrink_dist_ratio
         
     width_gate = max(corners[0]) - min(corners[0])
     height_gate = max(corners[1]) - min(corners[1])
@@ -65,7 +87,7 @@ def draw_gate(mask, corners, img):
     line_width = int(round(bar_thickness, 0))
     if line_width == 0: line_width = 1
     
-    color = (255, 255, 255)
+    #color = (255, 255, 255)
     
     #cv.line(mask, pt_1, pt_2, color, line_width) # make corners sharp instead of round
     #cv.line(mask, pt_2, pt_4, color, line_width)
@@ -75,7 +97,7 @@ def draw_gate(mask, corners, img):
     points = np.array([pt_1, pt_2, pt_4, pt_3])
     #cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
     
-    cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    #cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     
     cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
@@ -86,7 +108,12 @@ def reject_outliers(data, m=2):
     tmp = (abs(data[0] - np.mean(data[0])) <= m * np.std(data[0])) & (abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
     return (data[0][tmp], data[1][tmp])
 
-def template_matching_thresholding(match_thresh):
+def template_matching_thresholding(shrink_factor):
+    
+    # Variables that are object to sensitivity studies
+    match_thresh = 0.96
+    step = 0.05
+    #shrink_factor = 0.83 # 0.83 measured in original sample image
 
     template_name = 'Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
@@ -117,9 +144,8 @@ def template_matching_thresholding(match_thresh):
         scale_max = 1 # 1.5
         scale_min = 0.4 # 0.5, do not go below 0.4 or 0.35
         scale = scale_max
-        step = 0.05
         
-        loc = [[],[]]
+        loc = [[],[]] # first is 0/1 = x/y, second is coordinate   
         while scale >= scale_min: # Take a look at online tutorial
             template_scaled = rescale(template, scale)
             res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCORR_NORMED) #TM_CCOEFF_NORMED
@@ -130,8 +156,6 @@ def template_matching_thresholding(match_thresh):
         
             scale = scale - step
             
-            
-        #print(loc) # first is 0/1 = x/y, second is coordinate        
         width, height = img_gray.shape[::-1]
         x_min = 0
         x_max = width-1
@@ -160,29 +184,6 @@ def template_matching_thresholding(match_thresh):
         
         tmp = (loc[0] >= x_c) & (loc[1] >= y_c)
         corner_4 = (loc[0][tmp], loc[1][tmp])
-        
-             
-        '''corner_1 = [[], []] # top left
-        corner_2 = [[], []] # top right
-        corner_3 = [[], []] # bottom left
-        corner_4 = [[], []] # bottom right
-        
-        for j in range(len(loc[0])):
-            if loc[0][j] <= x_c and loc[1][j] <= y_c:
-                corner_1[0] = np.append(corner_1[0], loc[0][j])
-                corner_1[1] = np.append(corner_1[1], loc[1][j])
-                
-            if loc[0][j] <= x_c and loc[1][j] >= y_c:
-                corner_2[0] = np.append(corner_2[0], loc[0][j])
-                corner_2[1] = np.append(corner_2[1], loc[1][j])
-                
-            elif loc[0][j] >= x_c and loc[1][j] <= y_c:
-                corner_3[0] = np.append(corner_3[0], loc[0][j])
-                corner_3[1] = np.append(corner_3[1], loc[1][j])
-                
-            elif loc[0][j] >= x_c and loc[1][j] >= y_c:
-                corner_4[0] = np.append(corner_4[0], loc[0][j])
-                corner_4[1] = np.append(corner_4[1], loc[1][j])'''
         
         local_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
         num_corners = 0
@@ -224,7 +225,7 @@ def template_matching_thresholding(match_thresh):
         mask = np.zeros((img_gray.shape[0], img_gray.shape[1], 3), dtype=np.uint8)
         
         if global_corners != ([0,0,0,0],[0,0,0,0]):
-            mask = draw_gate(mask, global_corners, img_rgb)
+            mask = draw_gate(mask, img_rgb, global_corners, shrink_factor)
             
         end = time.perf_counter()
         
@@ -257,7 +258,8 @@ def template_matching_thresholding(match_thresh):
     
     return 0
 
-template_matching_thresholding(threshold)
+if __name__ == '__main__':
+    template_matching_thresholding()
 
 #plt.subplot(121),plt.imshow(img_rgb)
 #plt.title('Matches')#, plt.xticks([]), plt.yticks([])

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import warnings
-import Template_Matching_Thresholding
+import Template_Matching_Thresholding as TMT
 #from Template_Matching_Thresholding import template_matching_thresholding
 
 if sys.version_info[0] < 3:
@@ -41,7 +41,7 @@ def generate_ROC_plot():
     plot_data = []
     n_images = 438    # Number of images in folder
     
-    for param in np.linspace(0.89, 1.0, 12):
+    for param in np.linspace(0.7, 2.0, 15):
     #for i in range(1):
         # Initialize totals
         true_positives = 0
@@ -50,7 +50,7 @@ def generate_ROC_plot():
         ground_truth_negatives = 0
         
         print('Current parameter: ', param)
-        template_matching_thresholding(param)
+        TMT.template_matching_thresholding(param)
 
         for i in range(1, n_images + 1):
             
