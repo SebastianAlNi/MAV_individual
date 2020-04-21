@@ -33,6 +33,7 @@ import numpy as np
 from extrapolate_missing_corners import extrapolate_corners
 from matplotlib import pyplot as plt
 import time
+import os, psutil
 
 
 #threshold = 0.96 # 0.89 for cv.TM_CCOEFF_NORMED, 0.96 for cv.TM_CCORR_NORMED
@@ -41,6 +42,7 @@ import time
 # But also remember to consider frames where one corner is hidden
 # Lower threshold means more computational effort
 ratio_bar_to_gate_size = 1/7.5 # relative thickness of gate bar
+
 
 def rescale(img, scale):
     # Scale image resolution
@@ -87,20 +89,15 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     line_width = int(round(bar_thickness, 0))
     if line_width == 0: line_width = 1
     
-    #color = (255, 255, 255)
-    
-    #cv.line(mask, pt_1, pt_2, color, line_width) # make corners sharp instead of round
-    #cv.line(mask, pt_2, pt_4, color, line_width)
-    #cv.line(mask, pt_4, pt_3, color, line_width)
-    #cv.line(mask, pt_3, pt_1, color, line_width)
+    color = (255, 255, 255)
     
     points = np.array([pt_1, pt_2, pt_4, pt_3])
-    #cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
+    cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
     
     #cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
-    cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    #cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     
-    cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
+    #cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
     
     return mask
 
@@ -108,12 +105,12 @@ def reject_outliers(data, m=2):
     tmp = (abs(data[0] - np.mean(data[0])) <= m * np.std(data[0])) & (abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
     return (data[0][tmp], data[1][tmp])
 
-def template_matching_thresholding(shrink_factor):
+def template_matching_thresholding():
     
     # Variables that are object to sensitivity studies
     match_thresh = 0.96
     step = 0.05
-    #shrink_factor = 0.83 # 0.83 measured in original sample image
+    shrink_factor = 0.83 # 0.83 measured in original sample image
 
     template_name = 'Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
@@ -254,11 +251,14 @@ def template_matching_thresholding(shrink_factor):
     #print(f'Maximum runtime: {max_runtime:0.4f}')
     #print(f'Minimum runtime: {min_runtime:0.4f}')
     print(f'Mean runtime: {mean_runtime:0.4f}')
+    print(times)
     #print(f'Maximum local runtime: {max_loc_runtime:0.4f}')
     
     return 0
 
 if __name__ == '__main__':
+    pid = os.getpid()
+    print(pid)
     template_matching_thresholding()
 
 #plt.subplot(121),plt.imshow(img_rgb)

@@ -34,6 +34,7 @@ from matplotlib import pyplot as plt
 import time
 import multiprocessing as mp
 from joblib import Parallel, delayed
+import os, psutil
 
 
 threshold = 0.97 # 0.89 for cv.TM_CCOEFF_NORMED, 0.97 for cv.TM_CCORR_NORMED
@@ -71,11 +72,32 @@ def rescale(img, scale):
     scaled = cv.resize(img, dim, interpolation = cv.INTER_AREA)
     return scaled
 
-def draw_gate(mask, corners, img):
+def draw_gate(mask, img, corners, shrink_factor = 0):
+    
     pt_1 = [corners[1][0], corners[0][0]]
     pt_2 = [corners[1][1], corners[0][1]]
     pt_3 = [corners[1][2], corners[0][2]]
     pt_4 = [corners[1][3], corners[0][3]]
+    
+    # Shrink polygon corners to fit inner rectangle of gate
+    if shrink_factor != 0:
+        shrink_dist_ratio = (1 - shrink_factor) / 2
+        dist_12 = abs(pt_2[0] - pt_1[0])
+        dist_24 = abs(pt_4[1] - pt_2[1])
+        dist_43 = abs(pt_3[0] - pt_4[0])
+        dist_31 = abs(pt_1[1] - pt_3[1])
+        
+        pt_1[0] = pt_1[0] + dist_12 * shrink_dist_ratio * 2
+        pt_1[1] = pt_1[1] + dist_31 * shrink_dist_ratio
+        
+        pt_2[0] = pt_2[0] - dist_12 * shrink_dist_ratio
+        pt_2[1] = pt_2[1] + dist_24 * shrink_dist_ratio
+        
+        pt_3[0] = pt_3[0] + dist_43 * shrink_dist_ratio * 2
+        pt_3[1] = pt_3[1] - dist_31 * shrink_dist_ratio
+        
+        pt_4[0] = pt_4[0] - dist_43 * shrink_dist_ratio
+        pt_4[1] = pt_4[1] - dist_24 * shrink_dist_ratio
         
     width_gate = max(corners[0]) - min(corners[0])
     height_gate = max(corners[1]) - min(corners[1])
@@ -87,21 +109,18 @@ def draw_gate(mask, corners, img):
     
     color = (255, 255, 255)
     
-    #cv.line(mask, pt_1, pt_2, color, line_width) # make corners sharp instead of round
-    #cv.line(mask, pt_2, pt_4, color, line_width)
-    #cv.line(mask, pt_4, pt_3, color, line_width)
-    #cv.line(mask, pt_3, pt_1, color, line_width)
-    
     points = np.array([pt_1, pt_2, pt_4, pt_3])
     cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
     
-    cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
-    cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    #cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    #cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
+    
+    #cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
     
     return mask
 
 def reject_outliers(data, m=2):
-    tmp = np.logical_and(abs(data[0] - np.mean(data[0])) <= m * np.std(data[0]), abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
+    tmp = (abs(data[0] - np.mean(data[0])) <= m * np.std(data[0])) & (abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
     return (data[0][tmp], data[1][tmp])
      
     
@@ -110,8 +129,9 @@ def template_matching_thresholding(num):
     #start = time.perf_counter()
     global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
     match_thresh = 0.97
+    shrink_factor = 0.83 # 0.83 measured in original sample image
 
-    filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num+1) + '.png'
+    filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num) + '.png'
     
     img_rgb = cv.imread(filename)
         
@@ -156,41 +176,18 @@ def template_matching_thresholding(num):
     y_c = int(y_min + y_max) / 2
     
     # Sort matches to corners
-    tmp = np.logical_and(loc[0] <= x_c, loc[1] <= y_c)
+    tmp = (loc[0] <= x_c) & (loc[1] <= y_c)
     corner_1 = (loc[0][tmp], loc[1][tmp])
     
-    tmp = np.logical_and(loc[0] <= x_c, loc[1] >= y_c)
+    tmp = (loc[0] <= x_c) & (loc[1] >= y_c)
     corner_2 = (loc[0][tmp], loc[1][tmp])
     
-    tmp = np.logical_and(loc[0] >= x_c, loc[1] <= y_c)
+    tmp = (loc[0] >= x_c) & (loc[1] <= y_c)
     corner_3 = (loc[0][tmp], loc[1][tmp])
     
-    tmp = np.logical_and(loc[0] >= x_c, loc[1] >= y_c)
+    tmp = (loc[0] >= x_c) & (loc[1] >= y_c)
     corner_4 = (loc[0][tmp], loc[1][tmp])
-    
-         
-    '''corner_1 = [[], []] # top left
-    corner_2 = [[], []] # top right
-    corner_3 = [[], []] # bottom left
-    corner_4 = [[], []] # bottom right
-    
-    for j in range(len(loc[0])):
-        if loc[0][j] <= x_c and loc[1][j] <= y_c:
-            corner_1[0] = np.append(corner_1[0], loc[0][j])
-            corner_1[1] = np.append(corner_1[1], loc[1][j])
-            
-        if loc[0][j] <= x_c and loc[1][j] >= y_c:
-            corner_2[0] = np.append(corner_2[0], loc[0][j])
-            corner_2[1] = np.append(corner_2[1], loc[1][j])
-            
-        elif loc[0][j] >= x_c and loc[1][j] <= y_c:
-            corner_3[0] = np.append(corner_3[0], loc[0][j])
-            corner_3[1] = np.append(corner_3[1], loc[1][j])
-            
-        elif loc[0][j] >= x_c and loc[1][j] >= y_c:
-            corner_4[0] = np.append(corner_4[0], loc[0][j])
-            corner_4[1] = np.append(corner_4[1], loc[1][j])'''
-    
+
     local_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
     num_corners = 0
     
@@ -231,7 +228,7 @@ def template_matching_thresholding(num):
     mask = np.zeros((img_gray.shape[0], img_gray.shape[1], 3), dtype=np.uint8)
     
     #if global_corners != ([0,0,0,0],[0,0,0,0]):
-    mask = draw_gate(mask, global_corners, img_rgb)
+    mask = draw_gate(mask, img_rgb, global_corners, shrink_factor)
         
     #end = time.perf_counter()
     
@@ -245,10 +242,10 @@ def template_matching_thresholding(num):
     
     img_combined = cv.hconcat([img_rgb, mask])
         
-    cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num+1) + '.png',img_rgb)
-    cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num+1) + '.png',mask)
-    cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num+1) + '.png',img_combined)
-    print(round(num/438*100, 0), ' %')
+    cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num) + '.png',img_rgb)
+    cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)
+    cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)
+    #print(round(num/438*100, 0), ' %')
     
     #if (end-start) > max_runtime: max_runtime = end-start
     #if (end-start) < min_runtime: min_runtime = end-start
@@ -264,19 +261,28 @@ def template_matching_thresholding(num):
     
     return 0
 
-inputs = range(438)
-#template_matching_thresholding(threshold)
-#Parallel(n_jobs=-1)(delayed(template_matching_thresholding)(i) for i in inputs)
+if __name__ == '__main__':
+    pid = os.getpid()
+    print(pid)
 
-pool = mp.Pool(mp.cpu_count())
-start = time.perf_counter()
-pool.map(template_matching_thresholding, [num for num in inputs])
-end = time.perf_counter()
-runtime = end - start
-print(f'Runtime: {runtime:0.4f}')
-
-#plt.subplot(121),plt.imshow(img_rgb)
-#plt.title('Matches')#, plt.xticks([]), plt.yticks([])
-#plt.subplot(122),plt.imshow(mask,cmap = 'gray')
-#plt.title('Mask')#, plt.xticks([]), plt.yticks([])
-#plt.show()
+    inputs = range(439)
+    #inputs = np.linspace(0, 438, 439)
+    print(inputs)
+    #template_matching_thresholding(threshold)
+    #Parallel(n_jobs=-1)(delayed(template_matching_thresholding)(i) for i in inputs)
+    
+    pool = mp.Pool(mp.cpu_count())
+    start = time.perf_counter()
+    pool.map(template_matching_thresholding, [num for num in inputs])
+    end = time.perf_counter()
+    ps = psutil.Process(pid)
+    memoryuse = ps.memory_info()
+    print(memoryuse)
+    runtime = end - start
+    print(f'Runtime: {runtime:0.4f}')
+    
+    #plt.subplot(121),plt.imshow(img_rgb)
+    #plt.title('Matches')#, plt.xticks([]), plt.yticks([])
+    #plt.subplot(122),plt.imshow(mask,cmap = 'gray')
+    #plt.title('Mask')#, plt.xticks([]), plt.yticks([])
+    #plt.show()
