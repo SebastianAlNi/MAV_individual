@@ -34,10 +34,10 @@ from matplotlib import pyplot as plt
 import time
 import multiprocessing as mp
 from joblib import Parallel, delayed
-import os, psutil
+#import os, psutil
 
 
-threshold = 0.97 # 0.89 for cv.TM_CCOEFF_NORMED, 0.97 for cv.TM_CCORR_NORMED
+threshold = 0.96 # 0.89 for cv.TM_CCOEFF_NORMED, 0.97 for cv.TM_CCORR_NORMED
 
 # tradeoff between falsely detected patterns and undetected true patterns
 # Perhaps implement big loop that increases threshold until 4 corners are found of which one has only minimum matches
@@ -125,10 +125,10 @@ def reject_outliers(data, m=2):
      
     
     #for num in range(438):
-def template_matching_thresholding(num):
+def template_matching_thresholding():
     #start = time.perf_counter()
     global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
-    match_thresh = 0.97
+    #match_thresh = 0.97
     shrink_factor = 0.83 # 0.83 measured in original sample image
 
     filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num) + '.png'
@@ -262,12 +262,11 @@ def template_matching_thresholding(num):
     return 0
 
 if __name__ == '__main__':
-    pid = os.getpid()
-    print(pid)
+    #pid = os.getpid()
+    #print(pid)
 
     inputs = range(439)
     #inputs = np.linspace(0, 438, 439)
-    print(inputs)
     #template_matching_thresholding(threshold)
     #Parallel(n_jobs=-1)(delayed(template_matching_thresholding)(i) for i in inputs)
     
@@ -275,9 +274,9 @@ if __name__ == '__main__':
     start = time.perf_counter()
     pool.map(template_matching_thresholding, [num for num in inputs])
     end = time.perf_counter()
-    ps = psutil.Process(pid)
-    memoryuse = ps.memory_info()
-    print(memoryuse)
+    #ps = psutil.Process(pid)
+    #memoryuse = ps.memory_info()
+    #print(memoryuse)
     runtime = end - start
     print(f'Runtime: {runtime:0.4f}')
     
