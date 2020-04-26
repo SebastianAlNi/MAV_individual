@@ -33,20 +33,24 @@ def intersection_over_union(img_gt, img_filter):
     iou = interArea / float(img_gt_area + img_filter_area - interArea)
 
 	# return the intersection over union value
-    return iou, ground_truth_obstacles, filtered_im_obstacles, interArea, img_gt_area
+    return iou, ground_truth_obstacles, filtered_im_obstacles, interArea, img_gt_area, img_filter_area
 
 
 def generate_ROC_plot():
     """ Generates a simple ROC plot"""
     plot_data = []
     n_images = 438    # Number of images in folder
-    iou_threshold = 0.7
+    iou_threshold = 0.6
     
     file = open('ROC_Output/output.txt', 'w')
     file.write('false_positive_rate\ttrue_positive_rate\n')
     file.close()
+            
+    case1 = 0
+    case2 = 0
+    case3 = 0
     
-    for param in np.linspace(0.89, 1.0, 23):
+    for param in np.linspace(0.89, 1.0, 12):
         file = open('ROC_Output/output.txt', 'a')
     #for i in range(1):
         # Initialize totals
@@ -72,15 +76,18 @@ def generate_ROC_plot():
             except:
                 continue
             
-            iou, ground_truth_obstacles, filtered_im_obstacles, int_area, gt_area = intersection_over_union(ground_truth_im, filtered_im)
+            iou, ground_truth_obstacles, filtered_im_obstacles, int_area, gt_area, ft_area = intersection_over_union(ground_truth_im, filtered_im)
             
             if iou >= iou_threshold:
                 true_positives += 1
-            elif abs(int_area - gt_area) < 5:
-                true_positives += 1
+                case1+=1
+            elif abs(int_area - gt_area) < 2:
+                #true_positives += 1
                 false_positives += 1
-            elif iou < iou_threshold and sum((filtered_im_obstacles == True)) > 10:
+                case2+=1
+            elif iou < iou_threshold and ft_area > 10:
                 false_positives += 1
+                case3+=1
                 
             ground_truth_positives += 1 # Every ground truth frame is a positive since every frame shows a gate
             total += 1
@@ -90,7 +97,7 @@ def generate_ROC_plot():
             #false_positives += np.sum((filtered_im_obstacles == True) & (ground_truth_obstacles == False))
 
             #ground_truth_positives += np.sum((ground_truth_obstacles == True))
-            ground_truth_negatives += np.sum((ground_truth_obstacles == False))
+            #ground_truth_negatives += np.sum((ground_truth_obstacles == False))
             
             #print(int(round(i/n_images*100, 0)), ' %')
 
@@ -122,6 +129,10 @@ def generate_ROC_plot():
     plt.ylim(0, 1)
     plt.grid()
     plt.show()
+    
+    print(case1)
+    print(case2)
+    print(case3)
 
 
 # Main script

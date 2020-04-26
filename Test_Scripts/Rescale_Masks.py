@@ -33,4 +33,6 @@ def scale_masks(scale):
         
     return 0
 
-scale_masks(0.7)
+
+if __name__ == '__main__':
+    scale_masks(0.7)

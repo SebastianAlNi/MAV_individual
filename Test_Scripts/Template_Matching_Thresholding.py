@@ -62,7 +62,7 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     pt_4 = [corners[1][3], corners[0][3]]
     
     # Shrink polygon corners to fit inner rectangle of gate
-    if shrink_factor != 0:
+    if shrink_factor != 1:
         shrink_dist_ratio = (1 - shrink_factor) / 2
         dist_12 = abs(pt_2[0] - pt_1[0])
         dist_24 = abs(pt_4[1] - pt_2[1])
@@ -105,12 +105,13 @@ def reject_outliers(data, m=2):
     tmp = (abs(data[0] - np.mean(data[0])) <= m * np.std(data[0])) & (abs(data[1] - np.mean(data[1])) <= m * np.std(data[1]))
     return (data[0][tmp], data[1][tmp])
 
-def template_matching_thresholding(match_thresh):
+def template_matching_thresholding():
     
     # Variables that are object to sensitivity studies
-    #match_thresh = 0.96
+    match_thresh = 0.97
     step = 0.05
-    shrink_factor = 1 # 0.83 measured in original sample image
+    img_scale = 0.7
+    shrink_factor = 0.84 # 0.84 measured in original sample image
 
     template_name = 'Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
@@ -133,7 +134,7 @@ def template_matching_thresholding(match_thresh):
         img_rgb = cv.imread(filename)
             
         try:
-            img_rgb = rescale(img_rgb, 0.7)
+            img_rgb = rescale(img_rgb, img_scale)
             img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
         except:
             continue

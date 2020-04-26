@@ -33,7 +33,7 @@ def intersection_over_union(img_gt, img_filter):
     iou = interArea / float(img_gt_area + img_filter_area - interArea)
 
 	# return the intersection over union value
-    return iou, np.sum(filtered_im_obstacles)
+    return iou, img_filter_area
 
 
 def generate_ROC_plot():
@@ -53,7 +53,7 @@ def generate_ROC_plot():
         file = open('ROC_Output/output.txt', 'a')
         
         print('Current parameter: ', param)
-        #TMT.template_matching_thresholding(param)
+        #TMT.template_matching_thresholding()
 
         for i in range(1, n_images + 1):
             
@@ -72,7 +72,7 @@ def generate_ROC_plot():
         
         #print(iou)
             
-        for iou_threshold in np.linspace(0.0, 1.0, 101):
+        for iou_threshold in np.linspace(0.5, 1.0, 51):
             # Initialize totals
             true_positives = 0
             false_positives = 0
@@ -116,11 +116,11 @@ def generate_ROC_plot():
 
     # Create x and y data from plot_data
     x = [item[0] for item in plot_data]
-    y = [item[1] for item in plot_data]
+    y1 = [item[1] for item in plot_data]
     y2 = [item[2] for item in plot_data]
 
     # Plot
-    plt.plot(x, y, x, y2)
+    plt.plot(x, y1, x, y2)
     plt.legend(['True Positive Rate', 'False Positive Rate'])
     plt.xlabel("IoU Threshold")
     plt.ylabel("True/False Positive Ratio")

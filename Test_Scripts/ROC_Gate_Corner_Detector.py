@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sys
 import warnings
 import Template_Matching_Thresholding as TMT
+import Rescale_Masks as RM
 
 if sys.version_info[0] < 3:
     warnings.warn("This script should run using Python 3, which is currently not the case. The plot might not generate correctly.")
@@ -42,13 +43,13 @@ def my_obstacle_filter(im, param):
 def generate_ROC_plot():
     """ Generates a simple ROC plot"""
     plot_data = []
-    n_images = 200    # Number of images in folder
+    n_images = 438    # Number of images in folder
     
     file = open('ROC_Output/output.txt', 'w')
     file.write('false_positive_rate\ttrue_positive_rate\n')
     file.close()
     
-    for param in np.linspace(0.89, 1.0, 11):
+    for param in np.linspace(0.5, 1.0, 11):
         file = open('ROC_Output/output.txt', 'a')
         # Initialize totals
         true_positives = 0
@@ -58,6 +59,7 @@ def generate_ROC_plot():
         
         print('Current parameter: ', param)
         TMT.template_matching_thresholding(param)
+        RM.scale_masks(param)
 
         for i in range(1, n_images + 1):
             # Set image paths
@@ -69,18 +71,18 @@ def generate_ROC_plot():
             # Analyze ground truth image
             try:
                 ground_truth_im = Image.open(ground_truth_path, 'r')
+                filtered_im = Image.open(filter_path, 'r')
             except:
                 #print('image ', i, ' exception')
                 continue
             
-            ground_truth_im = ground_truth_im.convert("RGB")
+            #ground_truth_im = ground_truth_im.convert("RGB")
             ground_truth_pixels = np.asarray(ground_truth_im.getdata())
             ground_truth_obstacles = np.all(ground_truth_pixels == [255, 255, 255], axis=1)
 
             # Analyze original image
             #im = Image.open(original_path, 'r')
             #filtered_im = my_obstacle_filter(im, param)
-            filtered_im = Image.open(filter_path, 'r')
             filtered_im_pixels = np.asarray(filtered_im.getdata())
             filtered_im_obstacles = np.all(filtered_im_pixels == [255, 255, 255], axis=1)
 
