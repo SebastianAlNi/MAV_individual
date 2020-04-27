@@ -80,7 +80,7 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     pt_4 = [corners[1][3], corners[0][3]]
     
     # Shrink polygon corners to fit inner rectangle of gate
-    if shrink_factor != 0:
+    if shrink_factor != 1:
         shrink_dist_ratio = (1 - shrink_factor) / 2
         dist_12 = abs(pt_2[0] - pt_1[0])
         dist_24 = abs(pt_4[1] - pt_2[1])
@@ -110,12 +110,12 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     color = (255, 255, 255)
     
     points = np.array([pt_1, pt_2, pt_4, pt_3])
-    cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
+    #cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4) # test whether 4 or 8 is faster and better
     
     #cv.polylines(mask, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     #cv.polylines(img, np.int32([points]), True, (0, 255, 0), 1, lineType=4)
     
-    #cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
+    cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
     
     return mask
 
@@ -125,11 +125,11 @@ def reject_outliers(data, m=2):
      
     
     #for num in range(438):
-def template_matching_thresholding():
+def template_matching_thresholding(num):
     #start = time.perf_counter()
     global_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners globally
-    #match_thresh = 0.97
-    shrink_factor = 0.83 # 0.83 measured in original sample image
+    match_thresh = 0.96
+    shrink_factor = 0.84 # 0.84 measured in original sample image
 
     filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num) + '.png'
     
@@ -141,12 +141,12 @@ def template_matching_thresholding():
     except:
         return 0
     
-    scale_max = 1 # 1.5
+    scale_max = 0.55 # 1.5
     scale_min = 0.4 # 0.5, do not go below 0.4 or 0.35
     scale = scale_max
     step = 0.05
     
-    loc = [[],[]]
+    loc = [[],[]] # first is 0/1 = x/y, second is coordinate   
     while scale >= scale_min: # Take a look at online tutorial
         template_scaled = rescale(template, scale)
         res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCORR_NORMED) #TM_CCOEFF_NORMED
@@ -157,8 +157,6 @@ def template_matching_thresholding():
     
         scale = scale - step
         
-        
-    #print(loc) # first is 0/1 = x/y, second is coordinate        
     width, height = img_gray.shape[::-1]
     x_min = 0
     x_max = width-1
@@ -187,7 +185,7 @@ def template_matching_thresholding():
     
     tmp = (loc[0] >= x_c) & (loc[1] >= y_c)
     corner_4 = (loc[0][tmp], loc[1][tmp])
-
+    
     local_corners = ([0,0,0,0],[0,0,0,0]) # Stores the coordinates of the four corners
     num_corners = 0
     
@@ -227,9 +225,8 @@ def template_matching_thresholding():
     
     mask = np.zeros((img_gray.shape[0], img_gray.shape[1], 3), dtype=np.uint8)
     
-    #if global_corners != ([0,0,0,0],[0,0,0,0]):
     mask = draw_gate(mask, img_rgb, global_corners, shrink_factor)
-        
+    
     #end = time.perf_counter()
     
     #w, h = template.shape[::-1]
@@ -237,14 +234,14 @@ def template_matching_thresholding():
         #cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
         #cv.circle(img_rgb, pt, 5, (0,0,255), 2)
         
-    for pt in range(len(loc[0])):
+    '''for pt in range(len(loc[0])):
         cv.circle(img_rgb, (int(loc[1][pt]), int(loc[0][pt])), 5, (0,0,255), 2)
     
     img_combined = cv.hconcat([img_rgb, mask])
         
     cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num) + '.png',img_rgb)
     cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)
-    cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)
+    cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)'''
     #print(round(num/438*100, 0), ' %')
     
     #if (end-start) > max_runtime: max_runtime = end-start

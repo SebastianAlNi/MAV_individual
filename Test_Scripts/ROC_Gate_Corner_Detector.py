@@ -49,7 +49,7 @@ def generate_ROC_plot():
     file.write('false_positive_rate\ttrue_positive_rate\n')
     file.close()
     
-    for param in np.linspace(0.5, 1.0, 11):
+    for param in np.linspace(0.87, 1.0, 27):
         file = open('ROC_Output/output.txt', 'a')
         # Initialize totals
         true_positives = 0
@@ -59,7 +59,7 @@ def generate_ROC_plot():
         
         print('Current parameter: ', param)
         TMT.template_matching_thresholding(param)
-        RM.scale_masks(param)
+        #RM.scale_masks(param)
 
         for i in range(1, n_images + 1):
             # Set image paths

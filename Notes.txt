@@ -1,5 +1,18 @@
 ---------- NOTES ----------
 
+To Do:
+- Recalculate runtime
+- Redo diagrams
+	- step 0.1 gives partially too unaccurate results
+	- step 0.06 gives better runtime and also good results
+- mt to MT
+- Setup git
+- Comment code
+- Make everything look nice and easily reproducable
+- Add number of scaling steps as variable parameter
+
+Done:
+
 Approaches:
 
 - SIFT (non-free)

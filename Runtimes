@@ -3,16 +3,18 @@ TM_CCOEFF_NORMED: 0.0043
 TM_CCORR_NORMED: 0.0041
 
 Single Core:
-Maximum runtime: 0.0397
-Minimum runtime: 0.0305
-Mean runtime: 0.0333
+Maximum runtime: 0.0173
+Minimum runtime: 0.0132
+Mean runtime: 0.0144
 
 Multicore, all images:
 8 Cores:
-Runtime: 2.9461
+Runtime: 1.0365
 
 4 Cores:
-Runtime: 3.7367
+Runtime: 1.3233
 
 2 Cores:
-Runtime: 7.3025
+Runtime: 2.5818
+
+num_images = 308

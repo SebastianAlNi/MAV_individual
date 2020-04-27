@@ -108,10 +108,11 @@ def reject_outliers(data, m=2):
 def template_matching_thresholding():
     
     # Variables that are object to sensitivity studies
-    match_thresh = 0.97
+    match_thresh = 0.96
     step = 0.05
     img_scale = 0.7
     shrink_factor = 0.84 # 0.84 measured in original sample image
+    scale_max = 0.55 # 1.5
 
     template_name = 'Templates/chess_template8.png'
     #template_name_2 = '/home/ziemersky/Documents/Autonomous_Flight_of_Micro_Air_Vehicles/Individual Assignment/WashingtonOBRace/Templates/chess_template5r.png'
@@ -139,8 +140,7 @@ def template_matching_thresholding():
         except:
             continue
         
-        scale_max = 1 # 1.5
-        scale_min = 0.4 # 0.5, do not go below 0.4 or 0.35
+        scale_min = 0.4 # 0.5, do not go below 0.4
         scale = scale_max
         
         loc = [[],[]] # first is 0/1 = x/y, second is coordinate   
@@ -226,11 +226,6 @@ def template_matching_thresholding():
             mask = draw_gate(mask, img_rgb, global_corners, shrink_factor)
             
         end = time.perf_counter()
-        
-        #w, h = template.shape[::-1]
-        #for pt in zip(*loc[::-1]):
-            #cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
-            #cv.circle(img_rgb, pt, 5, (0,0,255), 2)
             
         '''for pt in range(len(loc[0])):
             cv.circle(img_rgb, (int(loc[1][pt]), int(loc[0][pt])), 5, (0,0,255), 2)
@@ -238,8 +233,8 @@ def template_matching_thresholding():
         img_combined = cv.hconcat([img_rgb, mask])
             
         cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num) + '.png',img_rgb)
-        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)'''
-        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)
+        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)
+        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)'''
         #print(round(num/438*100, 0), ' %')
         
         if (end-start) > max_runtime: max_runtime = end-start
@@ -249,8 +244,8 @@ def template_matching_thresholding():
         #if (end_loc-start_loc) > max_loc_runtime: max_loc_runtime = end_loc-start_loc
     
     mean_runtime = time_count/times
-    #print(f'Maximum runtime: {max_runtime:0.4f}')
-    #print(f'Minimum runtime: {min_runtime:0.4f}')
+    print(f'Maximum runtime: {max_runtime:0.4f}')
+    print(f'Minimum runtime: {min_runtime:0.4f}')
     print(f'Mean runtime: {mean_runtime:0.4f}')
     #print(times)
     #print(f'Maximum local runtime: {max_loc_runtime:0.4f}')
