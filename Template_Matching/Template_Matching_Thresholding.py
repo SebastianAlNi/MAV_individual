@@ -40,7 +40,7 @@ def template_matching_thresholding():
     times = 0
 
     # Read template image as grayscale
-    template_name = 'Templates/chess_template8.png'
+    template_name = 'checked_template.png'
     template = cv.imread(template_name,0)
     
     

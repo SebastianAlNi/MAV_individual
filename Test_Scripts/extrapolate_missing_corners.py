@@ -3,7 +3,7 @@
 """
 Created on Mon Apr 13 10:10:25 2020
 
-@author: ziemersky
+@author: Sebastian Nicolay
 """
 
 """

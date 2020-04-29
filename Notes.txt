@@ -49,3 +49,24 @@ ROC Curve:
 
 - Compare polyongs
 - Compare filled poygons
+
+To Do:
+    - Only allow reasonable aspect ratios:
+        - Check aspect ratio at corner distribution or at extrapolation?
+    - Add second, horizontal chess template
+    - Sensitivity study through different ROC curves, parameters:
+        - Threshold
+        - Scale step
+        - (min, max scale)
+        - ratio bar to gate size
+        - Rejection parameter m
+        - Original image scale
+        - Template Matching method
+    - Way faster if original image is scaled down
+    - Adapt polygon size, make smaller so that it is closer to the ground truth
+    - Autmatically create Output folder in original image directory, if it doesn't exist yet
+    
+Done:
+    - Filter single matches far away: reject_outliers
+    - Filter matches from gates behind: Only use min/max corner matches
+    - Parallelize -> global corner won't work
