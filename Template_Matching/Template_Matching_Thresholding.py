@@ -15,7 +15,8 @@ import Supporting_Functions as sf
 import time
 import os
 
-input_path = '../../WashingtonOBRace/'
+# Definition of inout and output directory
+input_path = '../../WashingtonOBRace/WashingtonOBRace/'
 output_path = '../../Output/'
 
 
@@ -194,13 +195,14 @@ def template_matching_thresholding():
         times += 1
     
     mean_runtime = time_count/times
-    print(f'Maximum runtime: {max_runtime:0.4f}')
-    print(f'Minimum runtime: {min_runtime:0.4f}')
-    print(f'Mean runtime: {mean_runtime:0.4f}')
+    print('Maximum runtime:', round(max_runtime, 4), 's')
+    print('Minimum runtime:', round(min_runtime, 4), 's')
+    print('Mean runtime:   ', round(mean_runtime, 4), 's')
     
     return 0
 
 if __name__ == '__main__':
+    # Check if output directory exists, otherwise create it.
     if os.path.isdir(output_path):
         print('Output directory already exists: %s' % output_path)
     else:
@@ -210,7 +212,8 @@ if __name__ == '__main__':
             print('Creation of the directory %s failed' % output_path)
         else:
             print('Successfully created the directory %s ' % output_path)
+    # Check if inout directory exists, otherwise provide an error.
     if os.path.isdir(input_path):
         template_matching_thresholding()
     else:
-        print('Input folder not found. Please place the WashingtonOBRace folder including the original images next to the MAV_individual folder. Do not use subfolders.')
+        print('Error 404: Input folder not found. Please place the WashingtonOBRace/WashingtonOBRace/ directory including the original images next to the MAV_individual folder. Do not place the images in any other subfolder.')
