@@ -13,6 +13,10 @@ import cv2 as cv
 import numpy as np
 import Supporting_Functions as sf
 import time
+import os
+
+input_path = '../../WashingtonOBRace/'
+output_path = '../../Output/'
 
 
 """
@@ -51,7 +55,7 @@ def template_matching_thresholding():
         start = time.perf_counter() # store starting time
     
         # Read original image
-        filename = '../../WashingtonOBRace/WashingtonOBRace/img_' + str(num) + '.png'     
+        filename = input_path + 'img_' + str(num) + '.png'     
         img_rgb = cv.imread(filename)
 
         # Check if the image exists, otherwise skip to next image number
@@ -179,9 +183,9 @@ def template_matching_thresholding():
         
         img_combined = cv.hconcat([img_rgb, mask])
             
-        cv.imwrite('../../WashingtonOBRace/Output/img_' + str(num) + '.png',img_rgb)
-        cv.imwrite('../../WashingtonOBRace/Output/comb_' + str(num) + '.png',img_combined)
-        cv.imwrite('../../WashingtonOBRace/Output/mask_' + str(num) + '.png',mask)
+        cv.imwrite(output_path + 'img_' + str(num) + '.png',img_rgb)
+        cv.imwrite(output_path + 'comb_' + str(num) + '.png',img_combined)
+        cv.imwrite(output_path + 'mask_' + str(num) + '.png',mask)
         
         # Calculate runtime
         if (end-start) > max_runtime: max_runtime = end-start
@@ -197,4 +201,16 @@ def template_matching_thresholding():
     return 0
 
 if __name__ == '__main__':
-    template_matching_thresholding()
+    if os.path.isdir(output_path):
+        print('Output directory already exists: %s' % output_path)
+    else:
+        try:
+            os.mkdir(output_path)
+        except OSError:
+            print('Creation of the directory %s failed' % output_path)
+        else:
+            print('Successfully created the directory %s ' % output_path)
+    if os.path.isdir(input_path):
+        template_matching_thresholding()
+    else:
+        print('Input folder not found. Please place the WashingtonOBRace folder including the original images next to the MAV_individual folder. Do not use subfolders.')
