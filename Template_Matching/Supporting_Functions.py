@@ -5,7 +5,7 @@ Created on Mon Apr 13 10:10:25 2020
 
 @author: Sebastian Nicolay
 
-@purpose: Supporint functions for the Individual Assignment for the course AE4317 Autonomous Flight of Micro Air Vehciles
+@purpose: Supporing functions for the Individual Assignment for the course AE4317 Autonomous Flight of Micro Air Vehciles
 """
 
 import cv2 as cv
@@ -13,14 +13,13 @@ import numpy as np
 
 """
 rescale
-Rescales an image to a different size
+Rescales an image to a different resolution
 @param img - image object, OpenCV data type
 @param scale - desired scale, where 1 has no effect
 @return scaled image object, OpenCV data type
 """
 def rescale(img, scale):
-    # Scale image resolution
-    #scale_percent = 100 # percent of original size
+    # Determine new image width and height
     width = int(img.shape[1] * scale)
     height = int(img.shape[0] * scale)
     dim = (width, height)
@@ -45,15 +44,16 @@ def reject_outliers(data, m=2):
 """
 extrapolate_corners
 This function extrapolates missing corners based on the coordinates that are closest to the missing corner
+It works if three corners are detected or if two corners aligned diagonally are detected
 @param corners - tuple object that contains x and y coordinates of all corners
 @param num - number of successfully detected corners
 @return tuple object that contains x and y coordinates of all corners including the extrapolated corners
 """
 def extrapolate_corners(corners, num):
     if num == 3 or num == 2:
-        # If one corner is missing, estimate coordinates based on given corners
-        if corners[0][0] == 0 and corners[1][0] == 0:
-            corners[0][0] = corners[0][1]
+        # If one or two corners are missing, estimate coordinates based on given corners
+        if corners[0][0] == 0 and corners[1][0] == 0: # Check if the corner is missing
+            corners[0][0] = corners[0][1] # Copy respective coordinates from the corner closest to the missing corner
             corners[1][0] = corners[1][2]
             
         if corners[0][1] == 0 and corners[1][1] == 0:
@@ -90,12 +90,15 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     
     # Shrink polygon corners to fit inner opening of gate
     if shrink_factor != 1:
-        shrink_dist_ratio = (1 - shrink_factor) / 2
+        shrink_dist_ratio = (1 - shrink_factor) / 2 # distance ratio to be added or subtracted from the respective coordinates
+        # Determine distances od the detected corners
         dist_12 = abs(pt_2[0] - pt_1[0])
         dist_24 = abs(pt_4[1] - pt_2[1])
         dist_43 = abs(pt_3[0] - pt_4[0])
         dist_31 = abs(pt_1[1] - pt_3[1])
         
+        # Add or subtract the respective distance ratios
+        # Multiply by two for left corners since template matching coordinates are always given on the left side of the match
         pt_1[0] = pt_1[0] + dist_12 * shrink_dist_ratio * 2
         pt_1[1] = pt_1[1] + dist_31 * shrink_dist_ratio
         
@@ -109,6 +112,7 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
         pt_4[1] = pt_4[1] - dist_24 * shrink_dist_ratio
     
     # Determine gate size and assumed thickness of the gate's bars
+    # This block is only important if the actual gate is drawn and not the inner polygon
     width_gate = max(corners[0]) - min(corners[0])
     height_gate = max(corners[1]) - min(corners[1])
     mean_gate_size = (width_gate + height_gate) / 2
@@ -124,7 +128,7 @@ def draw_gate(mask, img, corners, shrink_factor = 0):
     # Draw a thick polyline which resembles the bars of the gate
     #cv.polylines(mask, np.int32([points]), True, color, line_width, lineType=4)
         
-    # Draw a filled white polygone at the opening of the gate
+    # Draw a filled white polygon at the opening of the gate
     cv.fillPoly(mask, np.int32([points]), (255, 255, 255))
     
     return mask

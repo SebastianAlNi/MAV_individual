@@ -77,11 +77,12 @@ def template_matching_thresholding():
         '''---------------------------------------------------------
         Template matching loop for several template scales
         ---------------------------------------------------------'''
-        while scale >= scale_min: # Take a look at online tutorial
-            template_scaled = sf.rescale(template, scale)
+        while scale >= scale_min:
+            template_scaled = sf.rescale(template, scale) # Rescale template image
             res = cv.matchTemplate(img_gray,template_scaled,cv.TM_CCORR_NORMED) # Run template matching
             loc_tmp = np.where(res >= match_thresh) # Determine matches above the matching threshold
             
+            # Store coordinates of matches
             loc[0] = np.append(loc[0], loc_tmp[0])
             loc[1] = np.append(loc[1], loc_tmp[1])
         
@@ -98,11 +99,13 @@ def template_matching_thresholding():
         y_max = height-1
         if len(loc[0]) > 0:
             loc = sf.reject_outliers(loc) # Reject matches that are far away from all other matches
+            # Get min and max coordinates of the matches
             x_min = min(loc[0])
             x_max = max(loc[0])
             y_min = min(loc[1])
             y_max = max(loc[1])
         
+        # Determine center as mean values of min and max coordinates
         x_c = int(x_min + x_max) / 2
         y_c = int(y_min + y_max) / 2
         
@@ -131,7 +134,7 @@ def template_matching_thresholding():
         num_corners = 0 # Counts the corners
         
         if len(corner_1[0]) > 0:
-            corner_1 = sf.reject_outliers(corner_1)
+            corner_1 = sf.reject_outliers(corner_1) # Reject outliers around the respective corner
             local_corners[0][0] = np.min(corner_1[0])
             local_corners[1][0] = np.min(corner_1[1])
             num_corners += 1
@@ -159,19 +162,20 @@ def template_matching_thresholding():
         Extrapolation of missing corners if two or three corners were found
         ---------------------------------------------------------'''
         if num_corners == 4:
-            global_corners = local_corners
+            global_corners = local_corners # If all corners were found, no extrapolation is needed
         if num_corners == 3 or num_corners == 2:
-            global_corners = sf.extrapolate_corners(local_corners, num_corners)
+            global_corners = sf.extrapolate_corners(local_corners, num_corners) # Extralopate missing corners
         # If only one or zero corners were found, reuse last global corners
         
         
         '''---------------------------------------------------------
         Create mask and draw gate polygon
         ---------------------------------------------------------'''
+        # Create black image as mask background
         mask = np.zeros((img_gray.shape[0], img_gray.shape[1], 3), dtype=np.uint8)
         
         if global_corners != ([0,0,0,0],[0,0,0,0]):
-            mask = sf.draw_gate(mask, img_rgb, global_corners, shrink_factor)
+            mask = sf.draw_gate(mask, img_rgb, global_corners, shrink_factor) # Draw gate on the mask image
             
         end = time.perf_counter() # Store finishing time
         
@@ -180,10 +184,11 @@ def template_matching_thresholding():
         Draw matches for visualization and store images
         ---------------------------------------------------------'''
         for pt in range(len(loc[0])):
-            cv.circle(img_rgb, (int(loc[1][pt]), int(loc[0][pt])), 5, (0,0,255), 2)
+            cv.circle(img_rgb, (int(loc[1][pt]), int(loc[0][pt])), 5, (0,0,255), 2) # Draw circles to indicate matches
         
-        img_combined = cv.hconcat([img_rgb, mask])
-            
+        img_combined = cv.hconcat([img_rgb, mask]) # Combine original image with indicated matches and mask image
+        
+        # Write image files to output path
         cv.imwrite(output_path + 'img_' + str(num) + '.png',img_rgb)
         cv.imwrite(output_path + 'comb_' + str(num) + '.png',img_combined)
         cv.imwrite(output_path + 'mask_' + str(num) + '.png',mask)
@@ -212,7 +217,7 @@ if __name__ == '__main__':
             print('Creation of the directory %s failed' % output_path)
         else:
             print('Successfully created the directory %s ' % output_path)
-    # Check if inout directory exists, otherwise provide an error.
+    # Check if input directory exists, otherwise provide an error.
     if os.path.isdir(input_path):
         template_matching_thresholding()
     else:
